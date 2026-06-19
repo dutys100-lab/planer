@@ -150,8 +150,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .color-swatch:hover{transform:scale(1.2);border-color:rgba(0,0,0,.3)}
 .cp-label{font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
 /* NOTES AREA */
-.det-notes-ed{flex:1;width:100%;font-size:15px;font-weight:400;color:#000;line-height:1.8;outline:none;padding-bottom:40px;word-break:break-word;min-height:200px;font-family:inherit}
-.det-notes-ed:empty::before{content:'';pointer-events:none}
+.det-notes-ed{flex:1;width:100%;font-size:15px;font-weight:normal !important;color:#000;line-height:1.8;outline:none;padding-bottom:40px;word-break:break-word;min-height:200px;font-family:inherit}
 
 /* NOTE EDITOR */
 .ned{padding:28px 28px 0;display:flex;flex-direction:column;height:100%}
@@ -635,7 +634,7 @@ function renderDet(id){
   document.getElementById('detbox').innerHTML=`
     <textarea class="det-title" id="det-name" rows="1" placeholder="Nazwa zadania" onblur="autoSaveTask(${id})" oninput="autoResize(this)">${esc(t.name)}</textarea>
     <div class="fmt-bar" onmousedown="event.preventDefault()">
-      <select class="fmt-sel" onchange="fmtSize(this.value)">
+      <select class="fmt-sel" onmousedown="saveSel()" onchange="fmtSize(this.value);this.value=''">
         <option value="">Rozmiar</option>
         ${[8,9,10,11,12,14,16,18,20,24,28,32,36,48,72].map(s=>`<option value="${s}">${s}</option>`).join('')}
       </select>
@@ -654,19 +653,44 @@ function renderDet(id){
         <div id="palette-bg" class="color-palette" style="display:none"></div>
       </div>
     </div>
-    <div class="det-notes-ed" id="det-notes-ed" contenteditable="true" onblur="saveNotesCE(${id})">${t.notes||''}</div>`;
+    <div class="det-notes-ed" id="det-notes-ed" contenteditable="true"
+      onmouseup="saveSel()" onkeyup="saveSel()" onblur="saveNotesCE(${id})">${t.notes||''}</div>`;
   initPalette('palette-fc','foreColor');
   initPalette('palette-bg','hiliteColor');
   setTimeout(()=>autoResize(document.getElementById('det-name')),0);
 }
-function fmt(cmd,val){
-  document.execCommand(cmd,false,val||null);
+let _sel=null;
+function saveSel(){
+  const s=window.getSelection();
+  if(s&&s.rangeCount>0)_sel=s.getRangeAt(0).cloneRange();
+}
+function restoreSel(){
+  if(!_sel)return;
+  const ed=document.getElementById('det-notes-ed');
+  if(!ed)return;
+  ed.focus();
+  const s=window.getSelection();
+  s.removeAllRanges();
+  s.addRange(_sel);
+}
+function fmt(cmd){
+  restoreSel();
+  document.execCommand(cmd,false,null);
+  saveSel();
 }
 function fmtSize(size){
   if(!size)return;
+  restoreSel();
   document.execCommand('fontSize',false,'7');
   const ed=document.getElementById('det-notes-ed');
   if(ed){ed.querySelectorAll('font[size="7"]').forEach(el=>{el.removeAttribute('size');el.style.fontSize=size+'px';});}
+  saveSel();
+}
+function applyColor(cmd,color,pid){
+  document.getElementById(pid).style.display='none';
+  restoreSel();
+  document.execCommand(cmd,false,color);
+  saveSel();
 }
 const COLORS_STD=['#000000','#7F7F7F','#880015','#ED1C24','#FF7F27','#FFF200','#22B14C','#00A2E8','#3F48CC','#A349A4','#FFFFFF','#C3C3C3','#B97A57','#FFAEC9','#FFC90E','#EFE4B0','#B5E61D','#99D9EA','#7092BE','#C8BFE7'];
 const COLORS_THEME=['#FF0000','#FF4500','#FFA500','#FFD700','#ADFF2F','#00FF00','#00FA9A','#00CED1','#1E90FF','#0000FF','#8A2BE2','#FF00FF','#FF69B4','#DC143C','#8B0000','#A0522D','#808000','#006400','#008080','#000080'];
