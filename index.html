@@ -46,7 +46,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .tscroll::-webkit-scrollbar{width:3px}
 .tscroll::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
 .slbl{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--tx3);padding:8px 6px 3px;font-weight:600}
-.tr{display:flex;align-items:flex-start;padding:4px 6px;border-radius:var(--rs);cursor:pointer;transition:background .12s;margin-bottom:1px}
+.tr{display:flex;align-items:flex-start;padding:4px 6px;border-radius:var(--rs);cursor:pointer;transition:background .12s;margin-bottom:1px;position:relative}
 .tr:hover{background:var(--bgh)}
 .tr.sel{background:var(--bga)}
 .tr.dn{opacity:.35}
@@ -64,6 +64,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .pp{background:rgba(50,100,200,.1);color:#2a5ab0}
 .tdate{font-size:10px;color:var(--tx3);font-weight:500}
 .tdate.ov{color:var(--no);font-weight:600}
+
+/* THREE DOTS MENU */
+.t-dots{background:none;border:none;color:var(--tx3);cursor:pointer;font-size:18px;padding:0 4px;line-height:1;opacity:0.3;transition:opacity .12s;flex-shrink:0;margin-top:1px;font-family:inherit;border-radius:4px;letter-spacing:1px}
+.t-dots:hover,.tr:hover .t-dots{opacity:1;}
+.tr:hover .t-hover-acts{opacity:1 !important}
+.t-dots:hover{background:var(--bga);color:var(--tx)}
+.t-menu{position:fixed;background:#fff;border:.5px solid var(--bd2);border-radius:var(--r);box-shadow:0 4px 20px rgba(0,0,0,.12);z-index:500;min-width:170px;padding:4px 0;display:none}
+.t-menu.on{display:block}
+.t-menu-item{display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:13px;font-weight:500;color:#000;cursor:pointer;transition:background .12s;white-space:nowrap}
+.t-menu-item:hover{background:var(--bgh)}
+.t-menu-item.danger{color:var(--no)}
+.t-menu-sep{height:.5px;background:var(--bd);margin:4px 0}
+.t-colors{display:flex;gap:6px;padding:8px 14px;flex-wrap:wrap}
+.t-color-dot{width:16px;height:16px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .12s;flex-shrink:0}
+.t-color-dot:hover{transform:scale(1.2)}
+.t-color-dot.on{border-color:#000}
+.t-pin-icon{font-size:12px}
 
 /* INLINE SUBS — plain text, clickable to open tab */
 .isubs{padding:2px 0 3px 18px}
@@ -121,6 +138,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .det-title::placeholder{color:var(--tx3);font-weight:400}
 .det-notes{flex:1;width:100%;border:none;outline:none;font-size:14px;font-weight:500;color:var(--tx);background:transparent;font-family:inherit;resize:none;line-height:1.8;padding-bottom:40px}
 .det-notes::placeholder{color:var(--tx3);font-weight:400}
+/* FORMATTING TOOLBAR */
+.fmt-bar{display:flex;align-items:center;gap:2px;padding:0 0 10px;border-bottom:.5px solid var(--bd);margin-bottom:14px;flex-wrap:wrap}
+.fmt-btn{background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:4px;font-size:13px;color:#000;font-family:inherit;transition:background .12s;line-height:1.3;font-weight:600}
+.fmt-btn:hover{background:var(--bgh)}
+.fmt-sep{width:.5px;height:16px;background:var(--bd2);margin:0 4px;display:inline-block}
+.fmt-color-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:4px;cursor:pointer;transition:background .12s}
+.fmt-color-wrap:hover{background:var(--bgh)}
+.fmt-color-wrap input[type=color]{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;border:none;padding:0}
+.fmt-color-lbl{font-size:13px;font-weight:700;pointer-events:none;color:#000}
+/* NOTES AREA */
+.det-notes-ed{flex:1;width:100%;font-size:15px;font-weight:400;color:#000;line-height:1.8;outline:none;padding-bottom:40px;word-break:break-word;min-height:200px;font-family:inherit}
+.det-notes-ed:empty::before{content:'';pointer-events:none}
 
 /* NOTE EDITOR */
 .ned{padding:28px 28px 0;display:flex;flex-direction:column;height:100%}
@@ -189,7 +218,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
   <button class="rb on" id="rb-sb" onclick="toggleSB()" title="Pokaż / ukryj panel">
     <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
   </button>
-  <button class="rb" onclick="openBrief()" title="Brief / Dziś" style="margin-top:10px">
+  <button class="rb" onclick="openBrief()" title="Brief / Dziś" style="margin-top:24px">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="14"/></svg>
   </button>
   <button class="rb" onclick="openCalendar()" title="Kalendarz Google" style="margin-top:4px">
@@ -210,6 +239,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
         <div class="dlbl">Dane</div>
         <div class="ditem" onclick="exportData()"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Eksportuj JSON</div>
         <label class="ditem"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Importuj JSON<input type="file" accept=".json" onchange="importData(event)" style="display:none"></label>
+        <div class="dsep"></div>
+        <div class="dlbl" onclick="toggleShortcuts()" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding-right:8px">Skróty klawiszowe <span id="sc-arr">▸</span></div>
+        <div id="sc-list" style="display:none;padding:4px 8px 8px;font-size:11px;color:#444;line-height:2">
+          <div><b>Ctrl+N</b> — nowe zadanie / podzadanie</div>
+          <div><b>Ctrl+Shift+N</b> — nowa notatka</div>
+          <div><b>Ctrl+S</b> — zapisz</div>
+          <div><b>Ctrl+Enter</b> — zapisz</div>
+          <div><b>Ctrl+B</b> — Brief</div>
+          <div><b>Ctrl+F</b> — szukaj</div>
+          <div><b>Ctrl+W</b> — zamknij kartę</div>
+          <div><b>Escape</b> — zamknij okno</div>
+        </div>
         <div class="dsep"></div>
         <div class="ditem dg" onclick="clearAll()"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>Wyczyść wszystko</div>
       </div>
@@ -304,6 +345,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
       </div>
     </div>
   </div>
+<!-- TASK CONTEXT MENU -->
+<div class="t-menu" id="t-menu">
+  <div class="t-menu-item" id="t-pin" onclick="menuPin()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg> Przypnij u góry</div>
+  <div class="t-menu-sep"></div>
+  <div class="t-menu-item danger" onclick="menuDelete()">✕ Usuń</div>
+</div>
+
 </main>
 
 <script>
@@ -321,6 +369,11 @@ function save(){localStorage.setItem('pl8_t',JSON.stringify(tasks))}
 function saveN(){localStorage.setItem('pl8_n',JSON.stringify(notes))}
 function saveKey(){localStorage.setItem('planer_api_key',document.getElementById('apiinp').value.trim());alert('Klucz API zapisano.')}
 function esc(s){if(!s)return'';return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function linkify(text){
+  if(!text)return'';
+  const escaped=esc(text);
+  return escaped.replace(/(https?:\/\/[^\s&lt;&gt;"]+)/g,'<a href="$1" target="_blank" rel="noopener" style="color:#1a6fb5;text-decoration:underline;word-break:break-all">$1</a>');
+}
 function pL(p){return p==='high'?'Pilne':p==='low'?'Niski':'Normalny'}
 function pC(p){return p==='high'?'ph':p==='low'?'pl':'pm'}
 function over(d){if(!d)return false;return new Date(d)<new Date(new Date().toDateString())}
@@ -329,7 +382,58 @@ function over(d){if(!d)return false;return new Date(d)<new Date(new Date().toDat
 function toggleSB(){sbOpen=!sbOpen;document.getElementById('sb').classList.toggle('off',!sbOpen);document.getElementById('rb-sb').classList.toggle('on',sbOpen)}
 function toggleDrop(){document.getElementById('sdrop').classList.toggle('on')}
 document.addEventListener('click',e=>{const d=document.getElementById('sdrop'),b=document.getElementById('rb-set');if(!d.contains(e.target)&&!b.contains(e.target))d.classList.remove('on');});
+/* CONTEXT MENU */
+let menuTaskId=null;
+function openMenu(e,id){
+  e.stopPropagation();
+  menuTaskId=id;
+  const menu=document.getElementById('t-menu');
+  menu.classList.add('on');
+  // pozycja
+  const x=e.clientX,y=e.clientY;
+  menu.style.left=Math.min(x,window.innerWidth-180)+'px';
+  menu.style.top=Math.min(y,window.innerHeight-250)+'px';
+  // pin label
+  const t=tasks.find(t=>t.id===id);
+  const pinSvg=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>`;
+  document.getElementById('t-pin').innerHTML=`${pinSvg} ${t&&t.pinned?'Odepnij':'Przypnij u góry'}`;
+  // color dots active state
+  document.querySelectorAll('.t-color-dot').forEach(d=>d.classList.remove('on'));
+  if(t&&t.tcolor){
+    document.querySelectorAll('.t-color-dot').forEach(d=>{if(d.style.background===t.tcolor)d.classList.add('on');});
+  }
+}
+function closeMenu(){document.getElementById('t-menu').classList.remove('on');menuTaskId=null;}
+document.addEventListener('click',e=>{if(!document.getElementById('t-menu').contains(e.target))closeMenu();});
+function menuPin(){
+  const t=tasks.find(t=>t.id===menuTaskId);if(!t)return;
+  t.pinned=!t.pinned;save();renderSB();closeMenu();
+}
+function menuColor(c){
+  const t=tasks.find(t=>t.id===menuTaskId);if(!t)return;
+  t.tcolor=c;save();renderSB();closeMenu();
+}
+function menuRename(){
+  const t=tasks.find(t=>t.id===menuTaskId);if(!t)return;
+  const n=prompt('Zmień nazwę:',t.name);
+  if(n&&n.trim()){t.name=n.trim();save();renderSB();const tab=tabs.find(tb=>tb.id===t.id);if(tab){tab.lbl=t.name;renderTabs();}}
+  closeMenu();
+}
+function menuDelete(){
+  const id=menuTaskId;
+  if(!confirm('Usunąć zadanie?'))return;
+  tasks=tasks.filter(t=>t.id!==id);save();closeTab(id);renderSB();closeMenu();
+}
 function openCalendar(){alert('Kalendarz Google — wkrótce.')}
+function togglePin(id){
+  const t=tasks.find(t=>t.id===id);if(!t)return;
+  t.pinned=!t.pinned;save();renderSB();
+}
+function directDelete(id){
+  if(!confirm('Usunąć zadanie?'))return;
+  tasks=tasks.filter(t=>t.id!==id);save();closeTab(id);renderSB();
+}
+function toggleShortcuts(){const el=document.getElementById('sc-list');const arr=document.getElementById('sc-arr');if(!el)return;const open=el.style.display==='block';el.style.display=open?'none':'block';arr.textContent=open?'▸':'▾';}
 
 /* BRIEF */
 function openBrief(){
@@ -380,7 +484,58 @@ function submitForm(){
   tasks.push({id:Date.now(),name,prio:'med',due:'',proj:'',done:false,notes:'',subs:[],created:new Date().toISOString()});
   save();renderSB();closeForm();
 }
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeForm()});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){closeForm();return;}
+  const ctrl=e.ctrlKey||e.metaKey;
+  if(!ctrl)return;
+  // Ctrl+Enter — zapisz aktywne zadanie lub notatkę
+  if(e.key==='Enter'){
+    e.preventDefault();
+    if(atab&&atab!=='brief'&&!String(atab).startsWith('sub-')&&tasks.find(t=>t.id===atab))autoSaveTask(atab);
+    else if(atab&&String(atab).startsWith('sub-'))autoSaveSub(atab);
+    else if(snote)saveNote();
+    return;
+  }
+  // Ctrl+S — zapisz
+  if(e.key==='s'||e.key==='S'){
+    e.preventDefault();
+    if(atab&&atab!=='brief'&&!String(atab).startsWith('sub-')&&tasks.find(t=>t.id===atab))autoSaveTask(atab);
+    else if(atab&&String(atab).startsWith('sub-'))autoSaveSub(atab);
+    else if(snote)saveNote();
+    return;
+  }
+  // Ctrl+N — nowe zadanie lub podzadanie
+  if(e.key==='n'&&!e.shiftKey){
+    e.preventDefault();
+    smartAdd();
+    return;
+  }
+  // Ctrl+Shift+N — nowa notatka
+  if(e.key==='N'&&e.shiftKey){
+    e.preventDefault();
+    newNote();
+    return;
+  }
+  // Ctrl+B — Brief
+  if(e.key==='b'||e.key==='B'){
+    e.preventDefault();
+    openBrief();
+    return;
+  }
+  // Ctrl+F — szukaj
+  if(e.key==='f'||e.key==='F'){
+    e.preventDefault();
+    if(!sOpen)toggleSearch();
+    else document.getElementById('sb-sinp').focus();
+    return;
+  }
+  // Ctrl+W — zamknij aktywną kartę
+  if(e.key==='w'||e.key==='W'){
+    e.preventDefault();
+    if(atab)closeTab(atab);
+    return;
+  }
+});
 
 /* TABS */
 function openTab(id,lbl,type){
@@ -430,7 +585,7 @@ function renderSB(){
   const el=document.getElementById('tscroll');
   const active=tasks.filter(t=>!t.done&&(!q||t.name.toLowerCase().includes(q)));
   const done=tasks.filter(t=>t.done&&(!q||t.name.toLowerCase().includes(q)));
-  const srt=a=>[...a].sort((a,b)=>{const p={high:0,med:1,low:2};return(p[a.prio]||1)-(p[b.prio]||1)});
+  const srt=a=>[...a].sort((a,b)=>{if(a.pinned&&!b.pinned)return -1;if(!a.pinned&&b.pinned)return 1;const p={high:0,med:1,low:2};return(p[a.prio]||1)-(p[b.prio]||1)});
   let h='';
   if(active.length)h+='<div class="slbl">Aktywne</div>'+srt(active).map(trH).join('');
   if(done.length)h+='<div class="slbl">Zrobione</div>'+done.slice(0,6).map(trH).join('');
@@ -457,6 +612,10 @@ function trH(t){
           ${t.due?`<span class="tdate ${over(t.due)&&!t.done?'ov':''}">${t.due}</span>`:''}
         </div>
       </div>
+      <div style="display:flex;align-items:center;gap:2px;flex-shrink:0">
+        ${t.pinned?`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--tx2);opacity:0.7"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>`:''}
+        <button class="t-dots" onclick="event.stopPropagation();openMenu(event,${t.id})">⋯</button>
+      </div>
     </div>
     ${sh}
   </div>`;
@@ -473,16 +632,41 @@ function renderDet(id){
   const t=tasks.find(t=>t.id===id);if(!t)return;
   document.getElementById('detbox').innerHTML=`
     <textarea class="det-title" id="det-name" rows="1" placeholder="Nazwa zadania" onblur="autoSaveTask(${id})" oninput="autoResize(this)">${esc(t.name)}</textarea>
-    <textarea class="det-notes" id="det-notes" placeholder="" onblur="autoSaveTask(${id})">${esc(t.notes||'')}</textarea>`;
+    <div class="fmt-bar">
+      <button class="fmt-btn" onclick="fmt('bold')" title="Pogrubienie"><b>B</b></button>
+      <button class="fmt-btn" onclick="fmt('italic')" title="Kursywa"><i>I</i></button>
+      <button class="fmt-btn" onclick="fmt('underline')" title="Podkreślenie"><u>U</u></button>
+      <button class="fmt-btn" onclick="fmt('strikeThrough')" title="Przekreślenie"><s>S</s></button>
+      <span class="fmt-sep"></span>
+      <div class="fmt-color-wrap" title="Kolor tekstu">
+        <span class="fmt-color-lbl" style="text-decoration:underline;text-decoration-color:#e05252">A</span>
+        <input type="color" value="#e05252" onchange="fmt('foreColor',this.value)">
+      </div>
+      <div class="fmt-color-wrap" title="Kolor tła tekstu">
+        <span class="fmt-color-lbl" style="background:#fde68a;padding:0 2px">A</span>
+        <input type="color" value="#fde68a" onchange="fmt('hiliteColor',this.value)">
+      </div>
+    </div>
+    <div class="det-notes-ed" id="det-notes-ed" contenteditable="true" onblur="saveNotesCE(${id})">${t.notes||''}</div>`;
   setTimeout(()=>autoResize(document.getElementById('det-name')),0);
+}
+function fmt(cmd,val){
+  document.getElementById('det-notes-ed')&&document.getElementById('det-notes-ed').focus();
+  document.execCommand(cmd,false,val||null);
+}
+function saveNotesCE(id){
+  const t=tasks.find(t=>t.id===id);if(!t)return;
+  const ed=document.getElementById('det-notes-ed');
+  if(ed)t.notes=ed.innerHTML;
+  save();
 }
 function autoResize(el){el.style.height='auto';el.style.height=el.scrollHeight+'px'}
 function autoSaveTask(id){
   const t=tasks.find(t=>t.id===id);if(!t)return;
   const n=document.getElementById('det-name');
-  const nt=document.getElementById('det-notes');
+  const ed=document.getElementById('det-notes-ed');
   if(n&&n.value.trim())t.name=n.value.trim();
-  if(nt)t.notes=nt.value;
+  if(ed)t.notes=ed.innerHTML;
   save();renderSB();
   const tab=tabs.find(t=>t.id===id);if(tab&&n){tab.lbl=t.name;renderTabs();}
 }
