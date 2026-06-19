@@ -634,7 +634,7 @@ function renderDet(id){
   document.getElementById('detbox').innerHTML=`
     <textarea class="det-title" id="det-name" rows="1" placeholder="Nazwa zadania" onblur="autoSaveTask(${id})" oninput="autoResize(this)">${esc(t.name)}</textarea>
     <div class="fmt-bar" onmousedown="event.preventDefault()">
-      <select class="fmt-sel" onmousedown="saveSel()" onchange="fmtSize(this.value);this.value=''">
+      <select class="fmt-sel" onmousedown="saveSel()" onchange="var v=this.value;this.value='';fmtSize(v)">
         <option value="">Rozmiar</option>
         ${[8,9,10,11,12,14,16,18,20,24,28,32,36,48,72].map(s=>`<option value="${s}">${s}</option>`).join('')}
       </select>
@@ -681,9 +681,26 @@ function fmt(cmd){
 function fmtSize(size){
   if(!size)return;
   restoreSel();
-  document.execCommand('fontSize',false,'7');
-  const ed=document.getElementById('det-notes-ed');
-  if(ed){ed.querySelectorAll('font[size="7"]').forEach(el=>{el.removeAttribute('size');el.style.fontSize=size+'px';});}
+  const sel=window.getSelection();
+  if(!sel||sel.rangeCount===0)return;
+  const range=sel.getRangeAt(0);
+  if(range.collapsed){
+    // brak zaznaczenia — ustaw dla nowego tekstu
+    document.execCommand('fontSize',false,'7');
+    const ed=document.getElementById('det-notes-ed');
+    if(ed){ed.querySelectorAll('font[size="7"]').forEach(f=>{f.removeAttribute('size');f.style.fontSize=size+'px';});}
+    return;
+  }
+  try{
+    const span=document.createElement('span');
+    span.style.fontSize=size+'px';
+    range.surroundContents(span);
+  }catch(e){
+    // fallback jeśli zaznaczenie przecina elementy
+    document.execCommand('fontSize',false,'7');
+    const ed=document.getElementById('det-notes-ed');
+    if(ed){ed.querySelectorAll('font[size="7"]').forEach(f=>{const s=document.createElement('span');s.style.fontSize=size+'px';while(f.firstChild)s.appendChild(f.firstChild);f.parentNode.replaceChild(s,f);});}
+  }
   saveSel();
 }
 function applyColor(cmd,color,pid){
