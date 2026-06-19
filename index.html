@@ -144,10 +144,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .fmt-btn:hover{background:var(--bgh)}
 .fmt-sep{width:.5px;height:16px;background:var(--bd2);margin:0 4px;display:inline-block}
 .fmt-sel{border:.5px solid var(--bd2);border-radius:4px;font-size:12px;font-weight:500;color:#000;background:var(--bg);padding:3px 4px;cursor:pointer;outline:none;font-family:inherit}
-.color-palette{position:absolute;top:100%;left:0;background:#fff;border:.5px solid var(--bd2);border-radius:6px;padding:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:1000;width:170px}
-.color-palette .cp-row{display:flex;gap:4px;margin-bottom:4px}
-.color-swatch{width:18px;height:18px;border-radius:3px;cursor:pointer;border:.5px solid rgba(0,0,0,.1);flex-shrink:0;transition:transform .1s}
-.color-swatch:hover{transform:scale(1.2);border-color:rgba(0,0,0,.3)}
+.color-palette{position:absolute;top:100%;left:0;background:#fff;border:.5px solid var(--bd2);border-radius:6px;padding:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:1000;width:238px}
+.color-palette .cp-row{display:flex;gap:3px;margin-bottom:3px}
+.color-swatch{width:20px;height:20px;border-radius:3px;cursor:pointer;border:.5px solid rgba(0,0,0,.12);flex-shrink:0;transition:transform .1s}
+.color-swatch:hover{transform:scale(1.2);border-color:rgba(0,0,0,.4)}
 .cp-label{font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
 /* NOTES AREA */
 .det-notes-ed{flex:1;width:100%;font-size:15px;font-weight:normal !important;color:#000;line-height:1.8;outline:none;padding-bottom:40px;word-break:break-word;min-height:200px;font-family:inherit}
@@ -634,11 +634,6 @@ function renderDet(id){
   document.getElementById('detbox').innerHTML=`
     <textarea class="det-title" id="det-name" rows="1" placeholder="Nazwa zadania" onblur="autoSaveTask(${id})" oninput="autoResize(this)">${esc(t.name)}</textarea>
     <div class="fmt-bar" onmousedown="event.preventDefault()">
-      <select class="fmt-sel" onmousedown="saveSel()" onchange="var v=this.value;this.value='';fmtSize(v)">
-        <option value="">Rozmiar</option>
-        ${[8,9,10,11,12,14,16,18,20,24,28,32,36,48,72].map(s=>`<option value="${s}">${s}</option>`).join('')}
-      </select>
-      <span class="fmt-sep"></span>
       <button class="fmt-btn" onmousedown="event.preventDefault()" onclick="fmt('bold')"><b>B</b></button>
       <button class="fmt-btn" onmousedown="event.preventDefault()" onclick="fmt('italic')"><i>I</i></button>
       <button class="fmt-btn" onmousedown="event.preventDefault()" onclick="fmt('underline')"><u>U</u></button>
@@ -684,24 +679,26 @@ function fmtSize(size){
   const sel=window.getSelection();
   if(!sel||sel.rangeCount===0)return;
   const range=sel.getRangeAt(0);
-  if(range.collapsed){
-    // brak zaznaczenia — ustaw dla nowego tekstu
-    document.execCommand('fontSize',false,'7');
-    const ed=document.getElementById('det-notes-ed');
-    if(ed){ed.querySelectorAll('font[size="7"]').forEach(f=>{f.removeAttribute('size');f.style.fontSize=size+'px';});}
-    return;
+  if(range.collapsed)return;
+  const fragment=range.extractContents();
+  const span=document.createElement('span');
+  span.style.fontSize=size+'px';
+  span.style.fontWeight='normal';
+  span.appendChild(fragment);
+  range.insertNode(span);
+  range.setStartAfter(span);
+  range.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(range);
+  const id=getCurrentDetId();
+  if(id!==null)saveNotesCE(id);
+}
+function getCurrentDetId(){
+  // find which task is currently open
+  if(atab&&atab!=='brief'&&!String(atab).startsWith('sub-')&&!String(atab).startsWith('nv')){
+    return atab;
   }
-  try{
-    const span=document.createElement('span');
-    span.style.fontSize=size+'px';
-    range.surroundContents(span);
-  }catch(e){
-    // fallback jeśli zaznaczenie przecina elementy
-    document.execCommand('fontSize',false,'7');
-    const ed=document.getElementById('det-notes-ed');
-    if(ed){ed.querySelectorAll('font[size="7"]').forEach(f=>{const s=document.createElement('span');s.style.fontSize=size+'px';while(f.firstChild)s.appendChild(f.firstChild);f.parentNode.replaceChild(s,f);});}
-  }
-  saveSel();
+  return null;
 }
 function applyColor(cmd,color,pid){
   document.getElementById(pid).style.display='none';
@@ -710,14 +707,19 @@ function applyColor(cmd,color,pid){
   saveSel();
 }
 const COLORS_STD=['#000000','#7F7F7F','#880015','#ED1C24','#FF7F27','#FFF200','#22B14C','#00A2E8','#3F48CC','#A349A4','#FFFFFF','#C3C3C3','#B97A57','#FFAEC9','#FFC90E','#EFE4B0','#B5E61D','#99D9EA','#7092BE','#C8BFE7'];
-const COLORS_THEME=['#FF0000','#FF4500','#FFA500','#FFD700','#ADFF2F','#00FF00','#00FA9A','#00CED1','#1E90FF','#0000FF','#8A2BE2','#FF00FF','#FF69B4','#DC143C','#8B0000','#A0522D','#808000','#006400','#008080','#000080'];
+const COLORS_MORE=['#FF0000','#FF4500','#FFA500','#FFD700','#ADFF2F','#00FF00','#00FA9A','#00CED1','#1E90FF','#0000FF','#8A2BE2','#FF00FF','#FF69B4','#DC143C','#8B0000','#A0522D','#808000','#006400','#008080','#000080'];
+function mkRow(colors,cmd){
+  return`<div class="cp-row">${colors.map(c=>`<div class="color-swatch" style="background:${c}" onmousedown="event.preventDefault()" onclick="applyColor('${cmd}','${c}','${cmd==='foreColor'?'palette-fc':'palette-bg'}')"></div>`).join('')}</div>`;
+}
 function initPalette(pid,cmd){
   const el=document.getElementById(pid);if(!el)return;
-  el.innerHTML=`
-    <div class="cp-label">Standardowe</div>
-    <div class="cp-row">${COLORS_STD.map(c=>`<div class="color-swatch" style="background:${c}" onmousedown="event.preventDefault()" onclick="applyColor('${cmd}','${c}','${pid}')"></div>`).join('')}</div>
-    <div class="cp-label" style="margin-top:4px">Więcej</div>
-    <div class="cp-row">${COLORS_THEME.map(c=>`<div class="color-swatch" style="background:${c}" onmousedown="event.preventDefault()" onclick="applyColor('${cmd}','${c}','${pid}')"></div>`).join('')}</div>`;
+  el.innerHTML=
+    `<div class="cp-label">Standardowe</div>`+
+    mkRow(COLORS_STD.slice(0,10),cmd)+
+    mkRow(COLORS_STD.slice(10,20),cmd)+
+    `<div class="cp-label" style="margin-top:4px">Więcej</div>`+
+    mkRow(COLORS_MORE.slice(0,10),cmd)+
+    mkRow(COLORS_MORE.slice(10,20),cmd);
 }
 function applyColor(cmd,color,pid){
   document.getElementById(pid).style.display='none';
