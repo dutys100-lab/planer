@@ -138,6 +138,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .det-title::placeholder{color:var(--tx3);font-weight:400}
 .det-notes{flex:1;width:100%;border:none;outline:none;font-size:14px;font-weight:500;color:var(--tx);background:transparent;font-family:inherit;resize:none;line-height:1.8;padding-bottom:40px}
 .det-notes::placeholder{color:var(--tx3);font-weight:400}
+/* RIGHT-CLICK FORMAT MENU */
+.fmt-ctx{position:fixed;background:#fff;border:.5px solid var(--bd2);border-radius:var(--r);padding:5px 6px;box-shadow:0 4px 20px rgba(0,0,0,.12);z-index:2000;display:flex;align-items:center;gap:2px}
 /* FORMATTING TOOLBAR */
 .fmt-bar{display:flex;align-items:center;gap:2px;padding:0 0 10px;border-bottom:.5px solid var(--bd);margin-bottom:14px;flex-wrap:wrap}
 .fmt-btn{background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:4px;font-size:13px;color:#000;font-family:inherit;transition:background .12s;line-height:1.3;font-weight:600}
@@ -434,7 +436,24 @@ function directDelete(id){
   if(!confirm('Usunąć zadanie?'))return;
   tasks=tasks.filter(t=>t.id!==id);save();closeTab(id);renderSB();
 }
-function toggleShortcuts(){const el=document.getElementById('sc-list');const arr=document.getElementById('sc-arr');if(!el)return;const open=el.style.display==='block';el.style.display=open?'none':'block';arr.textContent=open?'▸':'▾';}
+function showFmtMenu(e){
+  e.preventDefault();
+  saveSel();
+  const menu=document.getElementById('fmt-ctx');
+  if(!menu)return;
+  menu.style.display='flex';
+  const x=Math.min(e.clientX,window.innerWidth-250);
+  const y=Math.min(e.clientY,window.innerHeight-100);
+  menu.style.left=x+'px';
+  menu.style.top=y+'px';
+  initPalette('fctx-fc','foreColor');
+  initPalette('fctx-bg','hiliteColor');
+}
+function hideFmtMenu(){
+  const m=document.getElementById('fmt-ctx');
+  if(m){m.style.display='none';}
+  document.querySelectorAll('.color-palette').forEach(p=>p.style.display='none');
+}
 
 /* BRIEF */
 function openBrief(){
@@ -633,23 +652,27 @@ function renderDet(id){
   const t=tasks.find(t=>t.id===id);if(!t)return;
   document.getElementById('detbox').innerHTML=`
     <textarea class="det-title" id="det-name" rows="1" placeholder="Nazwa zadania" onblur="autoSaveTask(${id})" oninput="autoResize(this)">${esc(t.name)}</textarea>
-    <div class="fmt-bar" onmousedown="event.preventDefault()">
-      <button class="fmt-btn" onmousedown="event.preventDefault()" onclick="fmt('bold')"><b>B</b></button>
-      <button class="fmt-btn" onmousedown="event.preventDefault()" onclick="fmt('italic')"><i>I</i></button>
-      <button class="fmt-btn" onmousedown="event.preventDefault()" onclick="fmt('underline')"><u>U</u></button>
-      <button class="fmt-btn" onmousedown="event.preventDefault()" onclick="fmt('strikeThrough')"><s>S</s></button>
+    <div class="det-notes-ed" id="det-notes-ed" contenteditable="true"
+      onmouseup="saveSel()" onkeyup="saveSel()"
+      oncontextmenu="showFmtMenu(event)"
+      onblur="saveNotesCE(${id})">${t.notes||''}</div>
+
+    <!-- floating format menu -->
+    <div id="fmt-ctx" class="fmt-ctx" style="display:none" onmousedown="event.preventDefault()">
+      <button class="fmt-btn" onclick="fmt('bold')"><b>B</b></button>
+      <button class="fmt-btn" onclick="fmt('italic')"><i>I</i></button>
+      <button class="fmt-btn" onclick="fmt('underline')"><u>U</u></button>
+      <button class="fmt-btn" onclick="fmt('strikeThrough')"><s>S</s></button>
       <span class="fmt-sep"></span>
       <div style="position:relative;display:inline-block">
-        <button class="fmt-btn" onmousedown="event.preventDefault()" onclick="togglePalette('palette-fc',event)" title="Kolor tekstu"><span style="border-bottom:3px solid #e05252;padding-bottom:1px"><b>A</b></span></button>
-        <div id="palette-fc" class="color-palette" style="display:none"></div>
+        <button class="fmt-btn" onclick="togglePalette('fctx-fc',event)" title="Kolor tekstu"><span style="border-bottom:3px solid #e05252"><b>A</b></span></button>
+        <div id="fctx-fc" class="color-palette" style="display:none"></div>
       </div>
       <div style="position:relative;display:inline-block">
-        <button class="fmt-btn" onmousedown="event.preventDefault()" onclick="togglePalette('palette-bg',event)" title="Kolor tła"><span style="background:#fde68a;padding:0 3px"><b>A</b></span></button>
-        <div id="palette-bg" class="color-palette" style="display:none"></div>
+        <button class="fmt-btn" onclick="togglePalette('fctx-bg',event)" title="Kolor tła"><span style="background:#fde68a;padding:0 3px"><b>A</b></span></button>
+        <div id="fctx-bg" class="color-palette" style="display:none"></div>
       </div>
-    </div>
-    <div class="det-notes-ed" id="det-notes-ed" contenteditable="true"
-      onmouseup="saveSel()" onkeyup="saveSel()" onblur="saveNotesCE(${id})">${t.notes||''}</div>`;
+    </div>`;
   initPalette('palette-fc','foreColor');
   initPalette('palette-bg','hiliteColor');
   setTimeout(()=>autoResize(document.getElementById('det-name')),0);
@@ -731,7 +754,12 @@ function togglePalette(pid,e){
   const el=document.getElementById(pid);
   if(el)el.style.display=el.style.display==='none'?'block':'none';
 }
-document.addEventListener('click',()=>{document.querySelectorAll('.color-palette').forEach(p=>p.style.display='none');});
+function toggleShortcuts(){const el=document.getElementById('sc-list');const arr=document.getElementById('sc-arr');if(!el)return;const open=el.style.display==='block';el.style.display=open?'none':'block';arr.textContent=open?'▸':'▾';}
+document.addEventListener('click',e=>{
+  const menu=document.getElementById('fmt-ctx');
+  if(menu&&!menu.contains(e.target))hideFmtMenu();
+  document.querySelectorAll('.color-palette').forEach(p=>{if(!p.contains(e.target))p.style.display='none';});
+});
 function saveNotesCE(id){
   const t=tasks.find(t=>t.id===id);if(!t)return;
   const ed=document.getElementById('det-notes-ed');
