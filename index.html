@@ -143,10 +143,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .fmt-btn{background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:4px;font-size:13px;color:#000;font-family:inherit;transition:background .12s;line-height:1.3;font-weight:600}
 .fmt-btn:hover{background:var(--bgh)}
 .fmt-sep{width:.5px;height:16px;background:var(--bd2);margin:0 4px;display:inline-block}
-.fmt-color-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:4px;cursor:pointer;transition:background .12s}
-.fmt-color-wrap:hover{background:var(--bgh)}
-.fmt-color-wrap input[type=color]{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;border:none;padding:0}
-.fmt-color-lbl{font-size:13px;font-weight:700;pointer-events:none;color:#000}
+.fmt-sel{border:.5px solid var(--bd2);border-radius:4px;font-size:12px;font-weight:500;color:#000;background:var(--bg);padding:3px 4px;cursor:pointer;outline:none;font-family:inherit}
+.color-palette{position:absolute;top:100%;left:0;background:#fff;border:.5px solid var(--bd2);border-radius:6px;padding:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:1000;width:170px}
+.color-palette .cp-row{display:flex;gap:4px;margin-bottom:4px}
+.color-swatch{width:18px;height:18px;border-radius:3px;cursor:pointer;border:.5px solid rgba(0,0,0,.1);flex-shrink:0;transition:transform .1s}
+.color-swatch:hover{transform:scale(1.2);border-color:rgba(0,0,0,.3)}
+.cp-label{font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
 /* NOTES AREA */
 .det-notes-ed{flex:1;width:100%;font-size:15px;font-weight:400;color:#000;line-height:1.8;outline:none;padding-bottom:40px;word-break:break-word;min-height:200px;font-family:inherit}
 .det-notes-ed:empty::before{content:'';pointer-events:none}
@@ -632,28 +634,61 @@ function renderDet(id){
   const t=tasks.find(t=>t.id===id);if(!t)return;
   document.getElementById('detbox').innerHTML=`
     <textarea class="det-title" id="det-name" rows="1" placeholder="Nazwa zadania" onblur="autoSaveTask(${id})" oninput="autoResize(this)">${esc(t.name)}</textarea>
-    <div class="fmt-bar">
-      <button class="fmt-btn" onclick="fmt('bold')" title="Pogrubienie"><b>B</b></button>
-      <button class="fmt-btn" onclick="fmt('italic')" title="Kursywa"><i>I</i></button>
-      <button class="fmt-btn" onclick="fmt('underline')" title="Podkreślenie"><u>U</u></button>
-      <button class="fmt-btn" onclick="fmt('strikeThrough')" title="Przekreślenie"><s>S</s></button>
+    <div class="fmt-bar" onmousedown="event.preventDefault()">
+      <select class="fmt-sel" onchange="fmtSize(this.value)">
+        <option value="">Rozmiar</option>
+        ${[8,9,10,11,12,14,16,18,20,24,28,32,36,48,72].map(s=>`<option value="${s}">${s}</option>`).join('')}
+      </select>
       <span class="fmt-sep"></span>
-      <div class="fmt-color-wrap" title="Kolor tekstu">
-        <span class="fmt-color-lbl" style="text-decoration:underline;text-decoration-color:#e05252">A</span>
-        <input type="color" value="#e05252" onchange="fmt('foreColor',this.value)">
+      <button class="fmt-btn" onmousedown="event.preventDefault()" onclick="fmt('bold')"><b>B</b></button>
+      <button class="fmt-btn" onmousedown="event.preventDefault()" onclick="fmt('italic')"><i>I</i></button>
+      <button class="fmt-btn" onmousedown="event.preventDefault()" onclick="fmt('underline')"><u>U</u></button>
+      <button class="fmt-btn" onmousedown="event.preventDefault()" onclick="fmt('strikeThrough')"><s>S</s></button>
+      <span class="fmt-sep"></span>
+      <div style="position:relative;display:inline-block">
+        <button class="fmt-btn" onmousedown="event.preventDefault()" onclick="togglePalette('palette-fc',event)" title="Kolor tekstu"><span style="border-bottom:3px solid #e05252;padding-bottom:1px"><b>A</b></span></button>
+        <div id="palette-fc" class="color-palette" style="display:none"></div>
       </div>
-      <div class="fmt-color-wrap" title="Kolor tła tekstu">
-        <span class="fmt-color-lbl" style="background:#fde68a;padding:0 2px">A</span>
-        <input type="color" value="#fde68a" onchange="fmt('hiliteColor',this.value)">
+      <div style="position:relative;display:inline-block">
+        <button class="fmt-btn" onmousedown="event.preventDefault()" onclick="togglePalette('palette-bg',event)" title="Kolor tła"><span style="background:#fde68a;padding:0 3px"><b>A</b></span></button>
+        <div id="palette-bg" class="color-palette" style="display:none"></div>
       </div>
     </div>
     <div class="det-notes-ed" id="det-notes-ed" contenteditable="true" onblur="saveNotesCE(${id})">${t.notes||''}</div>`;
+  initPalette('palette-fc','foreColor');
+  initPalette('palette-bg','hiliteColor');
   setTimeout(()=>autoResize(document.getElementById('det-name')),0);
 }
 function fmt(cmd,val){
-  document.getElementById('det-notes-ed')&&document.getElementById('det-notes-ed').focus();
   document.execCommand(cmd,false,val||null);
 }
+function fmtSize(size){
+  if(!size)return;
+  document.execCommand('fontSize',false,'7');
+  const ed=document.getElementById('det-notes-ed');
+  if(ed){ed.querySelectorAll('font[size="7"]').forEach(el=>{el.removeAttribute('size');el.style.fontSize=size+'px';});}
+}
+const COLORS_STD=['#000000','#7F7F7F','#880015','#ED1C24','#FF7F27','#FFF200','#22B14C','#00A2E8','#3F48CC','#A349A4','#FFFFFF','#C3C3C3','#B97A57','#FFAEC9','#FFC90E','#EFE4B0','#B5E61D','#99D9EA','#7092BE','#C8BFE7'];
+const COLORS_THEME=['#FF0000','#FF4500','#FFA500','#FFD700','#ADFF2F','#00FF00','#00FA9A','#00CED1','#1E90FF','#0000FF','#8A2BE2','#FF00FF','#FF69B4','#DC143C','#8B0000','#A0522D','#808000','#006400','#008080','#000080'];
+function initPalette(pid,cmd){
+  const el=document.getElementById(pid);if(!el)return;
+  el.innerHTML=`
+    <div class="cp-label">Standardowe</div>
+    <div class="cp-row">${COLORS_STD.map(c=>`<div class="color-swatch" style="background:${c}" onmousedown="event.preventDefault()" onclick="applyColor('${cmd}','${c}','${pid}')"></div>`).join('')}</div>
+    <div class="cp-label" style="margin-top:4px">Więcej</div>
+    <div class="cp-row">${COLORS_THEME.map(c=>`<div class="color-swatch" style="background:${c}" onmousedown="event.preventDefault()" onclick="applyColor('${cmd}','${c}','${pid}')"></div>`).join('')}</div>`;
+}
+function applyColor(cmd,color,pid){
+  document.getElementById(pid).style.display='none';
+  document.execCommand(cmd,false,color);
+}
+function togglePalette(pid,e){
+  e.stopPropagation();
+  document.querySelectorAll('.color-palette').forEach(p=>{if(p.id!==pid)p.style.display='none';});
+  const el=document.getElementById(pid);
+  if(el)el.style.display=el.style.display==='none'?'block':'none';
+}
+document.addEventListener('click',()=>{document.querySelectorAll('.color-palette').forEach(p=>p.style.display='none');});
 function saveNotesCE(id){
   const t=tasks.find(t=>t.id===id);if(!t)return;
   const ed=document.getElementById('det-notes-ed');
