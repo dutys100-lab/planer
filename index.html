@@ -307,6 +307,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
         <!-- PYTANIE -->
         <div style="padding:0 2px 20px;font-size:18px;font-weight:700;color:#000;letter-spacing:.01em">Kim Jestem?</div>
 
+        <!-- DZIŚ DLA AGENCJI — z wczorajszego wieczoru -->
+        <div class="card" style="margin-bottom:14px;border-left:3px solid #000">
+          <div class="clbl">Dziś dla agencji</div>
+          <div id="today-agency" style="font-size:15px;font-weight:600;color:#000;line-height:1.6;min-height:24px"></div>
+        </div>
+
         <!-- BRIEF AI -->
         <div class="card" style="margin-bottom:14px">
           <div class="clbl">Jedna ważna rzecz dziś</div>
@@ -402,7 +408,7 @@ function load(){
   tasks.forEach(t=>{(t.subs||[]).forEach(s=>{if(!s.id)s.id=Date.now()+Math.random();});});
   document.getElementById('apiinp').value=localStorage.getItem('planer_api_key')||'';
   renderSB();renderNS();
-  loadQuote();loadAnchors();loadEvening();
+  loadQuote();loadAnchors();loadEvening();loadTodayAgency();
 }
 function save(){localStorage.setItem('pl8_t',JSON.stringify(tasks))}
 function saveN(){localStorage.setItem('pl8_n',JSON.stringify(notes))}
@@ -812,6 +818,24 @@ function loadAnchors(){
   const w=document.getElementById('anchor-walk');
   if(m)m.checked=d.morning||false;
   if(w)w.checked=d.walk||false;
+}
+function loadTodayAgency(){
+  const yesterday=new Date(Date.now()-86400000).toDateString();
+  const saved=localStorage.getItem('pl_evening_'+yesterday);
+  const el=document.getElementById('today-agency');
+  if(!el)return;
+  if(saved){
+    const d=JSON.parse(saved);
+    el.textContent=d.task||'Nie wpisano wczoraj wieczorem.';
+    el.style.color=d.task?'#000':'var(--tx3)';
+    el.style.fontWeight=d.task?'600':'400';
+    el.style.fontStyle=d.task?'normal':'italic';
+  } else {
+    el.textContent='Wpisz wieczorem co jutro zrobisz dla agencji.';
+    el.style.color='var(--tx3)';
+    el.style.fontWeight='400';
+    el.style.fontStyle='italic';
+  }
 }
 function saveEvening(){
   const today=new Date().toDateString();
