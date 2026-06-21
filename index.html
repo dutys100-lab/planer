@@ -297,11 +297,47 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
     <!-- BRIEF -->
     <div id="v-home" class="view on">
       <div class="brief-wrap">
-        <div class="card">
-          <div class="clbl">Poranny brief</div>
-          <div class="btxt" id="btxt"><span class="bmt">Kliknij „Brief AI" — Claude przeanalizuje zadania i zaproponuje kolejność działania na dziś.</span></div>
+
+        <!-- CYTAT PORANNY -->
+        <div class="card" style="border-left:3px solid var(--bd2);margin-bottom:14px">
+          <div id="quote-text" style="font-size:15px;font-weight:400;color:#000;line-height:1.8;font-style:italic"></div>
+          <div id="quote-author" style="font-size:11px;color:var(--tx3);margin-top:8px;font-weight:600;letter-spacing:.05em;text-transform:uppercase"></div>
+        </div>
+
+        <!-- PYTANIE -->
+        <div style="padding:0 2px 20px;font-size:18px;font-weight:700;color:#000;letter-spacing:.01em">Kim Jestem?</div>
+
+        <!-- BRIEF AI -->
+        <div class="card" style="margin-bottom:14px">
+          <div class="clbl">Jedna ważna rzecz dziś</div>
+          <div class="btxt" id="btxt"><span class="bmt">Kliknij „Brief AI" żeby Claude przeanalizował zadania i powiedział co jest dziś najważniejsze.</span></div>
           <div style="margin-top:14px"><button class="btn pr" onclick="genBrief()">✦ Brief AI</button></div>
         </div>
+
+        <!-- KOTWICE -->
+        <div class="card" style="margin-bottom:14px">
+          <div class="clbl">Kotwice</div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;font-weight:500">
+              <input type="checkbox" id="anchor-morning" onchange="saveAnchors()" style="width:16px;height:16px;cursor:pointer">
+              Czas poranny — bycie sobą
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;font-weight:500">
+              <input type="checkbox" id="anchor-walk" onchange="saveAnchors()" style="width:16px;height:16px;cursor:pointer">
+              Spacer południowy
+            </label>
+          </div>
+        </div>
+
+        <!-- WIECZORNE ZAMKNIĘCIE -->
+        <div class="card">
+          <div class="clbl">Zamknięcie dnia</div>
+          <div style="font-size:13px;color:var(--tx3);margin-bottom:10px;font-weight:400">Jedna rzecz dla agencji na jutro:</div>
+          <textarea id="evening-task" style="width:100%;border:none;border-bottom:.5px solid var(--bd2);outline:none;font-size:14px;font-weight:500;color:#000;background:transparent;font-family:inherit;resize:none;line-height:1.6;padding-bottom:4px" rows="2" placeholder="Co jutro zrobię dla agencji..." onblur="saveEvening()"></textarea>
+          <div style="font-size:13px;color:var(--tx3);margin-top:16px;margin-bottom:10px;font-weight:400;font-style:italic">Czy dziś choć przez chwilę byłam sobą?</div>
+          <textarea id="evening-self" style="width:100%;border:none;border-bottom:.5px solid var(--bd2);outline:none;font-size:14px;font-weight:400;color:#000;background:transparent;font-family:inherit;resize:none;line-height:1.6;padding-bottom:4px" rows="2" placeholder="Kilka słów..." onblur="saveEvening()"></textarea>
+        </div>
+
       </div>
     </div>
 
@@ -363,10 +399,10 @@ let tasks=[],notes=[],tabs=[],atab=null,snote=null,nsOpen=false,sbOpen=true,sOpe
 function load(){
   try{tasks=JSON.parse(localStorage.getItem('pl8_t')||'[]')}catch{tasks=[]}
   try{notes=JSON.parse(localStorage.getItem('pl8_n')||'[]')}catch{notes=[]}
-  // nadaj ID podzadaniom jeśli ich nie mają
   tasks.forEach(t=>{(t.subs||[]).forEach(s=>{if(!s.id)s.id=Date.now()+Math.random();});});
   document.getElementById('apiinp').value=localStorage.getItem('planer_api_key')||'';
   renderSB();renderNS();
+  loadQuote();loadAnchors();loadEvening();
 }
 function save(){localStorage.setItem('pl8_t',JSON.stringify(tasks))}
 function saveN(){localStorage.setItem('pl8_n',JSON.stringify(notes))}
@@ -729,7 +765,70 @@ function applyColor(cmd,color,pid){
   document.execCommand(cmd,false,color);
   saveSel();
 }
-const COLORS_STD=['#000000','#7F7F7F','#880015','#ED1C24','#FF7F27','#FFF200','#22B14C','#00A2E8','#3F48CC','#A349A4','#FFFFFF','#C3C3C3','#B97A57','#FFAEC9','#FFC90E','#EFE4B0','#B5E61D','#99D9EA','#7092BE','#C8BFE7'];
+const QUOTES=[
+  {t:"Cisza jest odpowiedzią na wszystkie pytania.",a:"Ramana Maharishi"},
+  {t:"Twoja własna Jaźń jest twoim najwyższym nauczycielem.",a:"Ramana Maharishi"},
+  {t:"Znajdź tego, kto szuka, a szukanie się skończy.",a:"Ramana Maharishi"},
+  {t:"Nie ma nic do osiągnięcia. Ty już jesteś tym, czego szukasz.",a:"Ramana Maharishi"},
+  {t:"Pytanie 'Kim Jestem?' jest jedynym pytaniem wartym zadania.",a:"Ramana Maharishi"},
+  {t:"Miłość mówi: 'Jestem wszystkim'. Mądrość mówi: 'Jestem niczym'. Między tymi dwoma toczy się moje życie.",a:"Nisargadatta Maharaj"},
+  {t:"Nie szukaj prawdy. Tylko przestań kochać złudzenia.",a:"Nisargadatta Maharaj"},
+  {t:"Tylko spokojny umysł może zobaczyć prawdę.",a:"Nisargadatta Maharaj"},
+  {t:"Jesteś tym, przed czym wszystko się pojawia.",a:"Nisargadatta Maharaj"},
+  {t:"Nie musisz nic robić. Bądź tylko sobą.",a:"Nisargadatta Maharaj"},
+  {t:"Wróć do siebie. Zawsze tu byłeś.",a:"Mooji"},
+  {t:"Jesteś przestrzenią w której dzieje się wszystko. Nie tym, co się dzieje.",a:"Mooji"},
+  {t:"Nie próbuj zrozumieć życia. Żyj nim.",a:"Mooji"},
+  {t:"Cicho. Bądź cicho. Poznaj siebie jako ciszę.",a:"Mooji"},
+  {t:"Świadomość, która obserwuje myśli — to jesteś Ty. Nie myśli.",a:"Mooji"}
+];
+function loadQuote(){
+  const today=new Date().toDateString();
+  const saved=localStorage.getItem('pl_quote_date');
+  let idx=parseInt(localStorage.getItem('pl_quote_idx')||'0');
+  if(saved!==today){
+    idx=Math.floor(Math.random()*QUOTES.length);
+    localStorage.setItem('pl_quote_idx',idx);
+    localStorage.setItem('pl_quote_date',today);
+  }
+  const q=QUOTES[idx];
+  const qt=document.getElementById('quote-text');
+  const qa=document.getElementById('quote-author');
+  if(qt)qt.textContent='"'+q.t+'"';
+  if(qa)qa.textContent='— '+q.a;
+}
+function saveAnchors(){
+  const m=document.getElementById('anchor-morning');
+  const w=document.getElementById('anchor-walk');
+  const today=new Date().toDateString();
+  localStorage.setItem('pl_anchors_'+today,JSON.stringify({morning:m&&m.checked,walk:w&&w.checked}));
+}
+function loadAnchors(){
+  const today=new Date().toDateString();
+  const saved=localStorage.getItem('pl_anchors_'+today);
+  if(!saved)return;
+  const d=JSON.parse(saved);
+  const m=document.getElementById('anchor-morning');
+  const w=document.getElementById('anchor-walk');
+  if(m)m.checked=d.morning||false;
+  if(w)w.checked=d.walk||false;
+}
+function saveEvening(){
+  const today=new Date().toDateString();
+  const t=document.getElementById('evening-task');
+  const s=document.getElementById('evening-self');
+  localStorage.setItem('pl_evening_'+today,JSON.stringify({task:t&&t.value,self:s&&s.value}));
+}
+function loadEvening(){
+  const today=new Date().toDateString();
+  const saved=localStorage.getItem('pl_evening_'+today);
+  if(!saved)return;
+  const d=JSON.parse(saved);
+  const t=document.getElementById('evening-task');
+  const s=document.getElementById('evening-self');
+  if(t&&d.task)t.value=d.task;
+  if(s&&d.self)s.value=d.self;
+}['#000000','#7F7F7F','#880015','#ED1C24','#FF7F27','#FFF200','#22B14C','#00A2E8','#3F48CC','#A349A4','#FFFFFF','#C3C3C3','#B97A57','#FFAEC9','#FFC90E','#EFE4B0','#B5E61D','#99D9EA','#7092BE','#C8BFE7'];
 const COLORS_MORE=['#FF0000','#FF4500','#FFA500','#FFD700','#ADFF2F','#00FF00','#00FA9A','#00CED1','#1E90FF','#0000FF','#8A2BE2','#FF00FF','#FF69B4','#DC143C','#8B0000','#A0522D','#808000','#006400','#008080','#000080'];
 function mkRow(colors,cmd){
   return`<div class="cp-row">${colors.map(c=>`<div class="color-swatch" style="background:${c}" onmousedown="event.preventDefault()" onclick="applyColor('${cmd}','${c}','${cmd==='foreColor'?'palette-fc':'palette-bg'}')"></div>`).join('')}</div>`;
