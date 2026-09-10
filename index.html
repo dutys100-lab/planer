@@ -431,6 +431,7 @@ function saveKey(){
   localStorage.setItem('planer_api_key',document.getElementById('apiinp').value.trim());
   alert('Klucz API zapisano.');
 }
+function esc(s){if(!s)return'';return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 async function load(){
   document.getElementById('apiinp').value=localStorage.getItem('planer_api_key')||'';
   try{
