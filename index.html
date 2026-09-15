@@ -351,6 +351,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
           </div>
         </div>
 
+        <!-- CEL 3 LATA -->
+        <div class="card" style="margin-bottom:14px">
+          <div class="clbl">Mój cel — za 3 lata</div>
+          <textarea id="goal-text" style="width:100%;border:none;outline:none;font-size:14px;font-weight:500;color:#000;background:transparent;font-family:inherit;resize:none;line-height:1.6" rows="2" placeholder="Co chcę osiągnąć za 3 lata…" onblur="saveGoalText()"></textarea>
+          <div style="font-size:11px;color:var(--tx3);margin-top:14px;margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Kroki po kolei</div>
+          <div id="goal-steps"></div>
+          <input id="goal-step-inp" style="width:100%;border:none;border-bottom:.5px solid var(--bd2);outline:none;font-size:13px;font-weight:500;color:#000;background:transparent;font-family:inherit;padding:5px 0;margin-top:4px" placeholder="+ dodaj krok…" onkeydown="if(event.key==='Enter'){event.preventDefault();addGoalStep();}">
+        </div>
+
         <!-- WIECZORNE ZAMKNIĘCIE -->
         <div class="card">
           <div class="clbl">Zamknięcie dnia</div>
@@ -358,6 +367,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
           <textarea id="evening-task" style="width:100%;border:none;border-bottom:.5px solid var(--bd2);outline:none;font-size:14px;font-weight:500;color:#000;background:transparent;font-family:inherit;resize:none;line-height:1.6;padding-bottom:4px" rows="2" placeholder="Co jutro zrobię dla agencji..." onblur="saveEvening()"></textarea>
           <div style="font-size:13px;color:var(--tx3);margin-top:16px;margin-bottom:10px;font-weight:400;font-style:italic">Czy dziś choć przez chwilę byłam sobą?</div>
           <textarea id="evening-self" style="width:100%;border:none;border-bottom:.5px solid var(--bd2);outline:none;font-size:14px;font-weight:400;color:#000;background:transparent;font-family:inherit;resize:none;line-height:1.6;padding-bottom:4px" rows="2" placeholder="Kilka słów..." onblur="saveEvening()"></textarea>
+          <div style="font-size:13px;color:var(--tx3);margin-top:16px;margin-bottom:10px;font-weight:400">Jak minął dzisiaj dzień? Jak poszła Ci produktywność?</div>
+          <textarea id="evening-day" style="width:100%;border:none;border-bottom:.5px solid var(--bd2);outline:none;font-size:14px;font-weight:500;color:#000;background:transparent;font-family:inherit;resize:none;line-height:1.6;padding-bottom:4px" rows="3" placeholder="Opisz jak minął dzień…" onblur="saveEvening()"></textarea>
+          <div style="margin-top:14px"><button class="btn pr" onclick="analyzeDay()">✦ Analizuj dzień</button></div>
+          <div class="btxt" id="janalysis" style="margin-top:12px"><span class="bmt">Kliknij „Analizuj dzień" po zapisaniu wpisu.</span></div>
         </div>
 
       </div>
@@ -417,6 +430,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 
 <script>
 let tasks=[],notes=[],tabs=[],atab=null,snote=null,nsOpen=false,sbOpen=true,sOpen=false,expd={};
+let goal={text:'',steps:[]},journal=[];
 
 
 function save(){
@@ -426,6 +440,14 @@ function save(){
 function saveN(){
   localStorage.setItem('pl8_n',JSON.stringify(notes));
   DOC.set({notes:JSON.stringify(notes)},{merge:true}).catch(e=>console.log('Firebase saveN error:',e));
+}
+function saveJ(){
+  localStorage.setItem('pl8_j',JSON.stringify(journal));
+  DOC.set({journal:JSON.stringify(journal)},{merge:true}).catch(e=>console.log('Firebase saveJ error:',e));
+}
+function saveGoal(){
+  localStorage.setItem('pl8_g',JSON.stringify(goal));
+  DOC.set({goal:JSON.stringify(goal)},{merge:true}).catch(e=>console.log('Firebase saveGoal error:',e));
 }
 function saveKey(){
   localStorage.setItem('planer_api_key',document.getElementById('apiinp').value.trim());
@@ -440,14 +462,20 @@ async function load(){
       const d=doc.data();
       tasks=d.tasks?JSON.parse(d.tasks):[];
       notes=d.notes?JSON.parse(d.notes):[];
+      journal=d.journal?JSON.parse(d.journal):[];
+      goal=d.goal?JSON.parse(d.goal):{text:'',steps:[]};
     } else {
       // migracja z localStorage
       const lt=localStorage.getItem('pl8_t');
       const ln=localStorage.getItem('pl8_n');
+      const lj=localStorage.getItem('pl8_j');
+      const lg=localStorage.getItem('pl8_g');
       tasks=lt?JSON.parse(lt):[];
       notes=ln?JSON.parse(ln):[];
-      if(tasks.length||notes.length){
-        await DOC.set({tasks:JSON.stringify(tasks),notes:JSON.stringify(notes)});
+      journal=lj?JSON.parse(lj):[];
+      goal=lg?JSON.parse(lg):{text:'',steps:[]};
+      if(tasks.length||notes.length||journal.length||goal.text){
+        await DOC.set({tasks:JSON.stringify(tasks),notes:JSON.stringify(notes),journal:JSON.stringify(journal),goal:JSON.stringify(goal)});
         console.log('Migracja z localStorage do Firebase zakończona.');
       }
     }
@@ -455,10 +483,12 @@ async function load(){
     console.log('Firebase load error — używam localStorage:',e);
     try{tasks=JSON.parse(localStorage.getItem('pl8_t')||'[]')}catch{tasks=[]}
     try{notes=JSON.parse(localStorage.getItem('pl8_n')||'[]')}catch{notes=[]}
+    try{journal=JSON.parse(localStorage.getItem('pl8_j')||'[]')}catch{journal=[]}
+    try{goal=JSON.parse(localStorage.getItem('pl8_g')||'{"text":"","steps":[]}')}catch{goal={text:'',steps:[]}}
   }
   tasks.forEach(t=>{(t.subs||[]).forEach(s=>{if(!s.id)s.id=Date.now()+Math.random();});});
   renderSB();renderNS();
-  loadQuote();loadAnchors();loadEvening();loadTodayAgency();
+  loadQuote();loadAnchors();loadGoal();loadEvening();loadTodayAgency();
 }
 function linkify(text){
   if(!text)return'';
@@ -865,39 +895,111 @@ function loadAnchors(){
   if(m)m.checked=d.morning||false;
   if(w)w.checked=d.walk||false;
 }
+function todayISO(){return new Date().toISOString().slice(0,10);}
+function yesterdayISO(){return new Date(Date.now()-86400000).toISOString().slice(0,10);}
+function getEntry(date){return journal.find(e=>e.date===date);}
+function getOrCreateTodayEntry(){
+  const today=todayISO();
+  let e=getEntry(today);
+  if(!e){e={date:today,agency:'',self:'',day:'',analysis:'',created:new Date().toISOString()};journal.push(e);}
+  return e;
+}
 function loadTodayAgency(){
-  const yesterday=new Date(Date.now()-86400000).toDateString();
-  const saved=localStorage.getItem('pl_evening_'+yesterday);
+  const e=getEntry(yesterdayISO());
   const el=document.getElementById('today-agency');
   if(!el)return;
-  if(saved){
-    const d=JSON.parse(saved);
-    el.textContent=d.task||'Nie wpisano wczoraj wieczorem.';
-    el.style.color=d.task?'#000':'var(--tx3)';
-    el.style.fontWeight=d.task?'600':'400';
-    el.style.fontStyle=d.task?'normal':'italic';
+  if(e&&e.agency){
+    el.textContent=e.agency;
+    el.style.color='#000';el.style.fontWeight='600';el.style.fontStyle='normal';
   } else {
     el.textContent='Wpisz wieczorem co jutro zrobisz dla agencji.';
-    el.style.color='var(--tx3)';
-    el.style.fontWeight='400';
-    el.style.fontStyle='italic';
+    el.style.color='var(--tx3)';el.style.fontWeight='400';el.style.fontStyle='italic';
   }
 }
 function saveEvening(){
-  const today=new Date().toDateString();
+  const e=getOrCreateTodayEntry();
   const t=document.getElementById('evening-task');
   const s=document.getElementById('evening-self');
-  localStorage.setItem('pl_evening_'+today,JSON.stringify({task:t&&t.value,self:s&&s.value}));
+  const d=document.getElementById('evening-day');
+  if(t)e.agency=t.value;
+  if(s)e.self=s.value;
+  if(d)e.day=d.value;
+  saveJ();
 }
 function loadEvening(){
-  const today=new Date().toDateString();
-  const saved=localStorage.getItem('pl_evening_'+today);
-  if(!saved)return;
-  const d=JSON.parse(saved);
+  const e=getEntry(todayISO());
   const t=document.getElementById('evening-task');
   const s=document.getElementById('evening-self');
-  if(t&&d.task)t.value=d.task;
-  if(s&&d.self)s.value=d.self;
+  const d=document.getElementById('evening-day');
+  if(e){
+    if(t)t.value=e.agency||'';
+    if(s)s.value=e.self||'';
+    if(d)d.value=e.day||'';
+  }
+  renderDayAnalysis(e);
+}
+function renderDayAnalysis(e){
+  const el=document.getElementById('janalysis');
+  if(!el)return;
+  if(e&&e.analysis){
+    el.innerHTML=esc(e.analysis).replace(/\n/g,'<br>');
+  } else {
+    el.innerHTML='<span class="bmt">Kliknij „Analizuj dzień" po zapisaniu wpisu.</span>';
+  }
+}
+async function analyzeDay(){
+  const key=localStorage.getItem('planer_api_key');
+  if(!key){alert('Dodaj klucz API w ustawieniach.');toggleDrop();return;}
+  saveEvening();
+  const e=getEntry(todayISO());
+  if(!e||!(e.day&&e.day.trim())){alert('Napisz najpierw jak minął dzień.');return;}
+  const el=document.getElementById('janalysis');
+  el.innerHTML='<div class="ald"><div class="dot"></div><div class="dot"></div><div class="dot"></div><span>Claude analizuje dzień…</span></div>';
+  const recent=journal.filter(j=>j.date!==e.date&&j.day&&j.day.trim()).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,6);
+  const histTxt=recent.length?recent.map(j=>`${j.date}: ${j.day}`).join('\n'):'(brak wcześniejszych wpisów)';
+  const goalTxt=goal.text?`Cel na 3 lata: ${goal.text}\nKroki: ${(goal.steps||[]).map(s=>`${s.done?'[zrobione]':'[do zrobienia]'} ${s.text}`).join('; ')||'(brak)'}`:'(cel nie ustawiony)';
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:700,messages:[{role:'user',content:`Jesteś asystentką Małgosi, pomagasz jej w refleksji nad dniem i dążeniu do celu.\n\n${goalTxt}\n\nOstatnie dni:\n${histTxt}\n\nDzisiejszy wpis (${e.date}): ${e.day}\n\nPrzeanalizuj dzisiejszy dzień: co poszło dobrze, co warto poprawić, czy to zbliża ją do celu, i zwróć uwagę na coś, czego być może sama nie zauważa (powtarzające się wzorce, przeszkody, pomysły). Max 250 słów, po polsku, konkretnie i życzliwie.`}]})});
+    const d=await res.json();
+    if(d.content&&d.content[0]){e.analysis=d.content[0].text;saveJ();renderDayAnalysis(e);}
+    else el.innerHTML=`<span class="bmt">Błąd: ${d.error?.message||'nieznany'}</span>`;
+  }catch(err){el.innerHTML=`<span class="bmt">Błąd: ${err.message}</span>`;}
+}
+function renderGoalSteps(){
+  const el=document.getElementById('goal-steps');if(!el)return;
+  if(!goal.steps||!goal.steps.length){el.innerHTML='';return;}
+  el.innerHTML=goal.steps.map(s=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:4px 0;${s.done?'opacity:.45':''}">
+      <input type="checkbox" ${s.done?'checked':''} onchange="toggleGoalStep(${s.id})" style="width:14px;height:14px;cursor:pointer;flex-shrink:0">
+      <span style="flex:1;font-size:13px;font-weight:500;color:#000;${s.done?'text-decoration:line-through':''}">${esc(s.text)}</span>
+      <button onclick="deleteGoalStep(${s.id})" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:14px;padding:2px 4px">✕</button>
+    </div>`).join('');
+}
+function saveGoalText(){
+  const el=document.getElementById('goal-text');
+  goal.text=el?el.value:'';
+  saveGoal();
+}
+function loadGoal(){
+  const el=document.getElementById('goal-text');
+  if(el)el.value=goal.text||'';
+  renderGoalSteps();
+}
+function addGoalStep(){
+  const inp=document.getElementById('goal-step-inp');
+  const v=inp.value.trim();if(!v)return;
+  goal.steps=goal.steps||[];
+  goal.steps.push({id:Date.now(),text:v,done:false});
+  inp.value='';
+  saveGoal();renderGoalSteps();
+}
+function toggleGoalStep(id){
+  const s=(goal.steps||[]).find(s=>s.id===id);if(!s)return;
+  s.done=!s.done;saveGoal();renderGoalSteps();
+}
+function deleteGoalStep(id){
+  goal.steps=(goal.steps||[]).filter(s=>s.id!==id);
+  saveGoal();renderGoalSteps();
 }['#000000','#7F7F7F','#880015','#ED1C24','#FF7F27','#FFF200','#22B14C','#00A2E8','#3F48CC','#A349A4','#FFFFFF','#C3C3C3','#B97A57','#FFAEC9','#FFC90E','#EFE4B0','#B5E61D','#99D9EA','#7092BE','#C8BFE7'];
 const COLORS_MORE=['#FF0000','#FF4500','#FFA500','#FFD700','#ADFF2F','#00FF00','#00FA9A','#00CED1','#1E90FF','#0000FF','#8A2BE2','#FF00FF','#FF69B4','#DC143C','#8B0000','#A0522D','#808000','#006400','#008080','#000080'];
 function mkRow(colors,cmd){
