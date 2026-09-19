@@ -240,6 +240,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
   <button class="rb" onclick="openBrief()" title="Brief / Dziś" style="margin-top:24px">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="14"/></svg>
   </button>
+  <button class="rb" onclick="openJournal()" title="Dziennik dnia" style="margin-top:4px">
+    <svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+  </button>
   <button class="rb" onclick="openCalendar()" title="Kalendarz Google" style="margin-top:4px">
     <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
   </button>
@@ -329,13 +332,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
           <div id="today-agency" style="font-size:15px;font-weight:600;color:#000;line-height:1.6;min-height:24px"></div>
         </div>
 
-        <!-- BRIEF AI -->
-        <div class="card" style="margin-bottom:14px">
-          <div class="clbl">Jedna ważna rzecz dziś</div>
-          <div class="btxt" id="btxt"><span class="bmt">Kliknij „Brief AI" żeby Claude przeanalizował zadania i powiedział co jest dziś najważniejsze.</span></div>
-          <div style="margin-top:14px"><button class="btn pr" onclick="genBrief()">✦ Brief AI</button></div>
-        </div>
-
         <!-- KOTWICE -->
         <div class="card" style="margin-bottom:14px">
           <div class="clbl">Kotwice</div>
@@ -360,6 +356,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
           <input id="goal-step-inp" style="width:100%;border:none;border-bottom:.5px solid var(--bd2);outline:none;font-size:13px;font-weight:500;color:#000;background:transparent;font-family:inherit;padding:5px 0;margin-top:4px" placeholder="+ dodaj krok…" onkeydown="if(event.key==='Enter'){event.preventDefault();addGoalStep();}">
         </div>
 
+        </div>
+
+      </div>
+    </div>
+
+    <!-- DZIENNIK DNIA -->
+    <div id="v-journal" class="view">
+      <div class="brief-wrap">
+        <div style="padding:0 2px 20px;font-size:18px;font-weight:700;color:#000;letter-spacing:.01em">Dziennik dnia</div>
+
         <!-- WIECZORNE ZAMKNIĘCIE -->
         <div class="card">
           <div class="clbl">Zamknięcie dnia</div>
@@ -369,8 +375,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
           <textarea id="evening-self" style="width:100%;border:none;border-bottom:.5px solid var(--bd2);outline:none;font-size:14px;font-weight:400;color:#000;background:transparent;font-family:inherit;resize:none;line-height:1.6;padding-bottom:4px" rows="2" placeholder="Kilka słów..." onblur="saveEvening()"></textarea>
           <div style="font-size:13px;color:var(--tx3);margin-top:16px;margin-bottom:10px;font-weight:400">Jak minął dzisiaj dzień? Jak poszła Ci produktywność?</div>
           <textarea id="evening-day" style="width:100%;border:none;border-bottom:.5px solid var(--bd2);outline:none;font-size:14px;font-weight:500;color:#000;background:transparent;font-family:inherit;resize:none;line-height:1.6;padding-bottom:4px" rows="3" placeholder="Opisz jak minął dzień…" onblur="saveEvening()"></textarea>
-          <div style="margin-top:14px"><button class="btn pr" onclick="analyzeDay()">✦ Analizuj dzień</button></div>
-          <div class="btxt" id="janalysis" style="margin-top:12px"><span class="bmt">Kliknij „Analizuj dzień" po zapisaniu wpisu.</span></div>
+          <div style="font-size:11px;color:var(--tx3);margin-top:20px;margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Poprzednie dni</div>
+          <div id="journal-history"></div>
+        </div>
+
+        <!-- PLAN NA JUTRO — CZAT -->
+        <div class="card" style="margin-top:14px">
+          <div class="clbl">Plan na jutro — razem z Claude</div>
+          <div id="chat-thread" style="max-height:340px;overflow-y:auto;margin-bottom:12px"></div>
+          <div style="display:flex;gap:8px">
+            <input id="chat-inp" style="flex:1;border:none;border-bottom:.5px solid var(--bd2);outline:none;font-size:14px;font-weight:500;color:#000;background:transparent;font-family:inherit;padding:6px 0" placeholder="Napisz, co planujesz na jutro…" onkeydown="if(event.key==='Enter'){event.preventDefault();sendChat();}">
+            <button class="btn pr" onclick="sendChat()" style="padding:8px 16px">Wyślij</button>
+          </div>
         </div>
 
       </div>
@@ -578,6 +594,10 @@ function openBrief(){
   if(!tabs.find(t=>t.id==='brief'))tabs.push({id:'brief',lbl:'Brief',type:'brief'});
   atab='brief';renderTabs();showView('home');
 }
+function openJournal(){
+  if(!tabs.find(t=>t.id==='journal'))tabs.push({id:'journal',lbl:'Dziennik dnia',type:'journal'});
+  atab='journal';renderTabs();showView('journal');
+}
 
 /* SMART ADD */
 function smartAdd(){
@@ -701,12 +721,13 @@ function renderTabs(){
 function swTab(id,type){atab=id;renderTabs();showTabV(id,type)}
 function showTabV(id,type){
   if(type==='brief')showView('home');
+  else if(type==='journal')showView('journal');
   else if(type==='task'){showView('task');renderDet(id);}
   else if(type==='subtask'){showView('subtask');renderSubDet(id);}
   else if(type==='note'){showView('note');loadNE(id);}
   else if(type==='notes')showView('notes');
 }
-function showView(v){['home','task','subtask','notes','note'].forEach(id=>document.getElementById('v-'+id).classList.toggle('on',id===v))}
+function showView(v){['home','journal','task','subtask','notes','note'].forEach(id=>document.getElementById('v-'+id).classList.toggle('on',id===v))}
 
 /* SEARCH */
 function toggleSearch(){
@@ -936,34 +957,59 @@ function loadEvening(){
     if(s)s.value=e.self||'';
     if(d)d.value=e.day||'';
   }
-  renderDayAnalysis(e);
+  renderJournalHistory();
+  renderChat();
 }
-function renderDayAnalysis(e){
-  const el=document.getElementById('janalysis');
-  if(!el)return;
-  if(e&&e.analysis){
-    el.innerHTML=esc(e.analysis).replace(/\n/g,'<br>');
-  } else {
-    el.innerHTML='<span class="bmt">Kliknij „Analizuj dzień" po zapisaniu wpisu.</span>';
-  }
+function renderChat(){
+  const e=getEntry(todayISO());
+  const el=document.getElementById('chat-thread');if(!el)return;
+  const msgs=(e&&e.chat)||[];
+  if(!msgs.length){el.innerHTML='<div class="bmt" style="font-size:13px">Napisz, co planujesz na jutro, a Claude pomoże to rozłożyć.</div>';return;}
+  el.innerHTML=msgs.map(m=>`
+    <div style="margin-bottom:10px;${m.role==='user'?'text-align:right':''}">
+      <div style="display:inline-block;max-width:85%;padding:8px 12px;border-radius:10px;font-size:13.5px;line-height:1.5;white-space:pre-wrap;text-align:left;${m.role==='user'?'background:#000;color:#fff':'background:var(--bgh);color:#000'}">${esc(m.text)}</div>
+    </div>`).join('');
+  el.scrollTop=el.scrollHeight;
 }
-async function analyzeDay(){
+async function sendChat(){
   const key=localStorage.getItem('planer_api_key');
   if(!key){alert('Dodaj klucz API w ustawieniach.');toggleDrop();return;}
-  saveEvening();
-  const e=getEntry(todayISO());
-  if(!e||!(e.day&&e.day.trim())){alert('Napisz najpierw jak minął dzień.');return;}
-  const el=document.getElementById('janalysis');
-  el.innerHTML='<div class="ald"><div class="dot"></div><div class="dot"></div><div class="dot"></div><span>Claude analizuje dzień…</span></div>';
-  const recent=journal.filter(j=>j.date!==e.date&&j.day&&j.day.trim()).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,6);
-  const histTxt=recent.length?recent.map(j=>`${j.date}: ${j.day}`).join('\n'):'(brak wcześniejszych wpisów)';
-  const goalTxt=goal.text?`Cel na 3 lata: ${goal.text}\nKroki: ${(goal.steps||[]).map(s=>`${s.done?'[zrobione]':'[do zrobienia]'} ${s.text}`).join('; ')||'(brak)'}`:'(cel nie ustawiony)';
+  const inp=document.getElementById('chat-inp');
+  const msg=inp.value.trim();if(!msg)return;
+  const e=getOrCreateTodayEntry();
+  e.chat=e.chat||[];
+  e.chat.push({role:'user',text:msg});
+  inp.value='';
+  saveJ();renderChat();
+  const thread=document.getElementById('chat-thread');
+  thread.innerHTML+='<div class="ald" style="margin-top:4px"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+  thread.scrollTop=thread.scrollHeight;
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:700,messages:[{role:'user',content:`Jesteś asystentką Małgosi, pomagasz jej w refleksji nad dniem i dążeniu do celu.\n\n${goalTxt}\n\nOstatnie dni:\n${histTxt}\n\nDzisiejszy wpis (${e.date}): ${e.day}\n\nPrzeanalizuj dzisiejszy dzień: co poszło dobrze, co warto poprawić, czy to zbliża ją do celu, i zwróć uwagę na coś, czego być może sama nie zauważa (powtarzające się wzorce, przeszkody, pomysły). Max 250 słów, po polsku, konkretnie i życzliwie.`}]})});
+    const apiMsgs=e.chat.map(m=>({role:m.role,content:m.text}));
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:600,system:'Pomagasz Małgosi rozłożyć plan na jutro. Bądź konkretna i zwięzła, dopytuj tylko jeśli naprawdę trzeba, po polsku.',messages:apiMsgs})});
     const d=await res.json();
-    if(d.content&&d.content[0]){e.analysis=d.content[0].text;saveJ();renderDayAnalysis(e);}
-    else el.innerHTML=`<span class="bmt">Błąd: ${d.error?.message||'nieznany'}</span>`;
-  }catch(err){el.innerHTML=`<span class="bmt">Błąd: ${err.message}</span>`;}
+    if(d.content&&d.content[0])e.chat.push({role:'assistant',text:d.content[0].text});
+    else e.chat.push({role:'assistant',text:'Błąd: '+(d.error?.message||'nieznany')});
+  }catch(err){e.chat.push({role:'assistant',text:'Błąd: '+err.message});}
+  saveJ();renderChat();
+}
+function fmtDate(iso){
+  const d=new Date(iso+'T00:00:00');
+  return d.toLocaleDateString('pl-PL',{day:'numeric',month:'long',year:'numeric'});
+}
+function renderJournalHistory(){
+  const el=document.getElementById('journal-history');
+  if(!el)return;
+  const today=todayISO();
+  const past=journal.filter(j=>j.date!==today&&(j.day||j.agency||j.self)).sort((a,b)=>b.date.localeCompare(a.date));
+  if(!past.length){el.innerHTML='<div class="bmt" style="font-size:13px">Brak wcześniejszych wpisów.</div>';return;}
+  el.innerHTML=past.map(j=>`
+    <div style="padding:12px 0;border-top:.5px solid var(--bd)">
+      <div style="font-size:11px;color:var(--tx3);font-weight:600;margin-bottom:6px">${fmtDate(j.date)}</div>
+      ${j.day?`<div style="font-size:13.5px;color:#000;font-weight:500;line-height:1.6;white-space:pre-wrap;margin-bottom:6px">${esc(j.day)}</div>`:''}
+      ${j.agency?`<div style="font-size:12px;color:var(--tx2);margin-bottom:2px"><b>Dla agencji:</b> ${esc(j.agency)}</div>`:''}
+      ${j.self?`<div style="font-size:12px;color:var(--tx2);font-style:italic">${esc(j.self)}</div>`:''}
+    </div>`).join('');
 }
 function renderGoalSteps(){
   const el=document.getElementById('goal-steps');if(!el)return;
@@ -1097,23 +1143,6 @@ function saveNote(){const n=notes.find(n=>n.id===snote);if(!n)return;n.title=doc
 document.addEventListener('focusout',e=>{if(e.target.id==='nebo'||e.target.id==='neti')saveNote();});
 function delNote(){if(!confirm('Usunąć notatkę?'))return;notes=notes.filter(n=>n.id!==snote);saveN();closeTab(snote);snote=null;renderNS();renderNG();}
 function closeNote(){closeTab(snote);snote=null;renderNS();}
-
-/* BRIEF AI */
-async function genBrief(){
-  const key=localStorage.getItem('planer_api_key');
-  if(!key){alert('Dodaj klucz API w ustawieniach.');toggleDrop();return;}
-  const active=tasks.filter(t=>!t.done);if(!active.length){alert('Brak aktywnych zadań.');return;}
-  const el=document.getElementById('btxt');
-  el.innerHTML='<div class="ald"><div class="dot"></div><div class="dot"></div><div class="dot"></div><span>Claude analizuje zadania…</span></div>';
-  const today=new Date().toLocaleDateString('pl-PL',{weekday:'long',day:'numeric',month:'long'});
-  const list=active.map(t=>{let s=`- ${t.name} [${pL(t.prio)}]`;if(t.due)s+=` | termin: ${t.due}${over(t.due)?' ⚠ PRZETERMINOWANE':''}`;if(t.proj)s+=` | projekt: ${t.proj}`;if(t.subs&&t.subs.length){const nd=t.subs.filter(s=>!s.done).length;s+=` | podzadania: ${nd}/${t.subs.length}`;}return s;}).join('\n');
-  try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:700,messages:[{role:'user',content:`Dzisiaj jest ${today}.\n\nJesteś asystentką planowania dla Małgosi: agencja ubezpieczeniową Ubezpieczenia Grzegorz Chwiałkowski, projekty webowe, studia, blog.\n\n1. Co jest NAJWAŻNIEJSZE dziś\n2. Co jest zaległe\n3. Co można odłożyć\n4. Kolejność działania\n\nMax 250 słów, po polsku, konkretnie.\n\nZadania:\n${list}`}]})});
-    const d=await res.json();
-    if(d.content&&d.content[0])el.textContent=d.content[0].text;
-    else el.innerHTML=`<span class="bmt">Błąd: ${d.error?.message||'nieznany'}</span>`;
-  }catch(e){el.innerHTML=`<span class="bmt">Błąd: ${e.message}</span>`;}
-}
 
 /* DATA */
 function exportData(){const b=new Blob([JSON.stringify({tasks,notes,exported:new Date().toISOString()},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='planer-'+new Date().toISOString().slice(0,10)+'.json';a.click();document.getElementById('sdrop').classList.remove('on');}
