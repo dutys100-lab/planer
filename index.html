@@ -168,7 +168,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .color-swatch:hover{transform:scale(1.2);border-color:rgba(0,0,0,.4)}
 .cp-label{font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
 /* NOTES AREA */
-.det-notes-ed{flex:1;width:100%;font-size:15px;font-weight:normal !important;color:#000;line-height:1.8;outline:none;padding-bottom:40px;word-break:break-word;min-height:200px;font-family:inherit}
+.det-notes-ed{flex:1;width:100%;font-size:15px;font-weight:normal !important;color:#000;line-height:1.8;outline:none;padding-bottom:40px;word-break:break-word;min-height:200px;font-family:inherit;overflow-y:auto}
+.det-notes-ed::-webkit-scrollbar{width:4px}
+.det-notes-ed::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
 
 /* NOTE EDITOR */
 .ned{padding:28px 28px 0;display:flex;flex-direction:column;height:100%}
@@ -874,16 +876,30 @@ const QUOTES=[
   {t:"Znajdź tego, kto szuka, a szukanie się skończy.",a:"Ramana Maharishi"},
   {t:"Nie ma nic do osiągnięcia. Ty już jesteś tym, czego szukasz.",a:"Ramana Maharishi"},
   {t:"Pytanie 'Kim Jestem?' jest jedynym pytaniem wartym zadania.",a:"Ramana Maharishi"},
+  {t:"Serce jest ośrodkiem, z którego wszystko wypływa i do którego wszystko powraca.",a:"Ramana Maharishi"},
+  {t:"Ego znika, gdy szukasz jego źródła z pełną uwagą.",a:"Ramana Maharishi"},
+  {t:"Prawdziwa wiedza to trwanie w Jaźni, nie gromadzenie informacji.",a:"Ramana Maharishi"},
   {t:"Miłość mówi: 'Jestem wszystkim'. Mądrość mówi: 'Jestem niczym'. Między tymi dwoma toczy się moje życie.",a:"Nisargadatta Maharaj"},
   {t:"Nie szukaj prawdy. Tylko przestań kochać złudzenia.",a:"Nisargadatta Maharaj"},
   {t:"Tylko spokojny umysł może zobaczyć prawdę.",a:"Nisargadatta Maharaj"},
   {t:"Jesteś tym, przed czym wszystko się pojawia.",a:"Nisargadatta Maharaj"},
   {t:"Nie musisz nic robić. Bądź tylko sobą.",a:"Nisargadatta Maharaj"},
+  {t:"Zanim pomyślisz 'jestem', już jesteś. To wystarczy.",a:"Nisargadatta Maharaj"},
+  {t:"Obserwuj umysł, a zobaczysz, że nim nie jesteś.",a:"Nisargadatta Maharaj"},
+  {t:"Wszystko przemija oprócz świadomości tego, co przemija.",a:"Nisargadatta Maharaj"},
   {t:"Wróć do siebie. Zawsze tu byłeś.",a:"Mooji"},
   {t:"Jesteś przestrzenią w której dzieje się wszystko. Nie tym, co się dzieje.",a:"Mooji"},
   {t:"Nie próbuj zrozumieć życia. Żyj nim.",a:"Mooji"},
   {t:"Cicho. Bądź cicho. Poznaj siebie jako ciszę.",a:"Mooji"},
-  {t:"Świadomość, która obserwuje myśli — to jesteś Ty. Nie myśli.",a:"Mooji"}
+  {t:"Świadomość, która obserwuje myśli — to jesteś Ty. Nie myśli.",a:"Mooji"},
+  {t:"Nie jesteś postacią w filmie. Jesteś ekranem, na którym film się wyświetla.",a:"Mooji"},
+  {t:"Wolność nie czeka w przyszłości. Jest tu, zanim pomyślisz o niej.",a:"Mooji"},
+  {t:"Puść to, co myślisz o sobie, a zostanie to, czym naprawdę jesteś.",a:"Mooji"},
+  {t:"Bądź cicho choć przez chwilę, a zobaczysz, że wolność już tu jest.",a:"Papaji"},
+  {t:"Nie musisz nic osiągać. Musisz tylko przestać uciekać od siebie.",a:"Papaji"},
+  {t:"Wolność nie jest nagrodą za wysiłek. Jest twoją naturą.",a:"Papaji"},
+  {t:"Zaufaj ciszy bardziej niż własnym myślom o sobie.",a:"Papaji"},
+  {t:"To, czego szukasz, szuka poprzez ciebie.",a:"Papaji"}
 ];
 function loadQuote(){
   const today=new Date().toDateString();
@@ -997,19 +1013,83 @@ function fmtDate(iso){
   const d=new Date(iso+'T00:00:00');
   return d.toLocaleDateString('pl-PL',{day:'numeric',month:'long',year:'numeric'});
 }
+const MIES=['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
+function weekOfYear(d){
+  const year=d.getFullYear();
+  const jan1=new Date(year,0,1);
+  const jan1Dow=(jan1.getDay()+6)%7; // 0=pon
+  const week1Mon=new Date(year,0,1-jan1Dow);
+  const diffDays=Math.floor((d-week1Mon)/86400000);
+  return Math.floor(diffDays/7)+1;
+}
+function bucketFor(dateStr,tY,tM,tW){
+  const d=new Date(dateStr+'T00:00:00');
+  const y=d.getFullYear(),m=d.getMonth(),w=weekOfYear(d);
+  if(y<tY)return{type:'year',key:''+y,label:'Rok '+y};
+  if(m<tM)return{type:'month',key:y+'-'+m,label:MIES[m]+' '+y};
+  if(w<tW)return{type:'week',key:y+'-W'+w,label:'Tydzień '+w+' ('+y+')'};
+  return{type:'day',key:dateStr,label:null};
+}
 function renderJournalHistory(){
-  const el=document.getElementById('journal-history');
-  if(!el)return;
+  const el=document.getElementById('journal-history');if(!el)return;
   const today=todayISO();
+  const now=new Date(today+'T00:00:00');
+  const tY=now.getFullYear(),tM=now.getMonth(),tW=weekOfYear(now);
   const past=journal.filter(j=>j.date!==today&&(j.day||j.agency||j.self)).sort((a,b)=>b.date.localeCompare(a.date));
   if(!past.length){el.innerHTML='<div class="bmt" style="font-size:13px">Brak wcześniejszych wpisów.</div>';return;}
-  el.innerHTML=past.map(j=>`
-    <div style="padding:12px 0;border-top:.5px solid var(--bd)">
-      <div style="font-size:11px;color:var(--tx3);font-weight:600;margin-bottom:6px">${fmtDate(j.date)}</div>
-      ${j.day?`<div style="font-size:13.5px;color:#000;font-weight:500;line-height:1.6;white-space:pre-wrap;margin-bottom:6px">${esc(j.day)}</div>`:''}
+  let html='',lastKey=null;
+  past.forEach(j=>{
+    const b=bucketFor(j.date,tY,tM,tW);
+    if(b.type!=='day'){
+      if(b.key!==lastKey){
+        if(b.type==='week'){
+          html+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;margin-bottom:2px">
+            <span style="font-size:11px;color:var(--tx3);font-weight:700;text-transform:uppercase;letter-spacing:.06em">${b.label}</span>
+            <button id="copybtn-${esc(b.key)}" onclick="copyWeek('${b.key}')" style="background:none;border:.5px solid var(--bd2);border-radius:5px;padding:2px 8px;font-size:11px;font-weight:600;color:var(--tx2);cursor:pointer;font-family:inherit">Kopiuj</button>
+          </div>`;
+        } else {
+          html+=`<div style="font-size:11px;color:var(--tx3);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-top:16px;margin-bottom:2px">${b.label}</div>`;
+        }
+        lastKey=b.key;
+      }
+    } else lastKey=null;
+    html+=`
+    <div style="padding:10px 0;border-top:.5px solid var(--bd)">
+      <div style="font-size:11px;color:var(--tx3);font-weight:600;margin-bottom:4px">${fmtDate(j.date)}</div>
+      ${j.day?`<div style="font-size:13px;color:#000;font-weight:500;line-height:1.6;white-space:pre-wrap;margin-bottom:4px">${esc(j.day)}</div>`:''}
       ${j.agency?`<div style="font-size:12px;color:var(--tx2);margin-bottom:2px"><b>Dla agencji:</b> ${esc(j.agency)}</div>`:''}
       ${j.self?`<div style="font-size:12px;color:var(--tx2);font-style:italic">${esc(j.self)}</div>`:''}
-    </div>`).join('');
+    </div>`;
+  });
+  el.innerHTML=html;
+}
+function copyWeek(key){
+  const today=todayISO();
+  const now=new Date(today+'T00:00:00');
+  const tY=now.getFullYear(),tM=now.getMonth(),tW=weekOfYear(now);
+  const entries=journal.filter(j=>{
+    if(j.date===today||!(j.day||j.agency||j.self))return false;
+    const b=bucketFor(j.date,tY,tM,tW);
+    return b.type==='week'&&b.key===key;
+  }).sort((a,b)=>a.date.localeCompare(b.date));
+  if(!entries.length)return;
+  const text=entries.map(j=>{
+    let s=fmtDate(j.date)+'\n';
+    if(j.day)s+=j.day+'\n';
+    if(j.agency)s+='Dla agencji: '+j.agency+'\n';
+    if(j.self)s+=j.self+'\n';
+    return s.trim();
+  }).join('\n\n');
+  const done=()=>{
+    const btn=document.getElementById('copybtn-'+key);
+    if(btn){const old=btn.textContent;btn.textContent='Skopiowano ✓';setTimeout(()=>{if(btn.isConnected)btn.textContent=old;},1500);}
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(done).catch(()=>alert('Nie udało się skopiować.'));
+  else{
+    const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');done();}catch(e){alert('Nie udało się skopiować.');}
+    document.body.removeChild(ta);
+  }
 }
 function renderGoalSteps(){
   const el=document.getElementById('goal-steps');if(!el)return;
