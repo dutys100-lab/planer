@@ -8,6 +8,7 @@
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyBm2lO9obnJZm9Qt8QbkgBczLC8iRuwde0",
@@ -20,6 +21,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const DOC = db.collection('planer').doc('malgosi');
+const auth = firebase.auth();
 </script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -233,6 +235,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 </style>
 </head>
 <body>
+<div id="pl-login" style="display:none;position:fixed;inset:0;z-index:99999;background:#f9f8f6;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+  <div style="background:#fff;border:1px solid #e4e1da;border-radius:12px;padding:2.5rem;max-width:380px;width:90%;text-align:center">
+    <div style="font-size:40px;margin-bottom:.75rem">📋</div>
+    <div style="font-size:20px;font-weight:600;margin-bottom:.5rem">Planer</div>
+    <div style="font-size:14px;color:#5c5b56;margin-bottom:1.5rem">Zaloguj się kontem Google, żeby zobaczyć swoje dane.</div>
+    <button id="pl-login-btn" onclick="plLogin()" style="width:100%;padding:12px;border:1px solid #ccc9c0;border-radius:8px;background:#fff;font-size:15px;cursor:pointer;font-family:inherit">Zaloguj przez Google</button>
+    <div id="pl-login-msg" style="font-size:13px;color:#993c1d;margin-top:1rem"></div>
+  </div>
+</div>
+
 
 <!-- RIBBON -->
 <div class="ribbon">
@@ -1229,7 +1241,18 @@ function exportData(){const b=new Blob([JSON.stringify({tasks,notes,exported:new
 function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.tasks)tasks=d.tasks;if(d.notes)notes=d.notes;save();saveN();renderSB();renderNS();alert('Zaimportowano.');}catch{alert('Błędny plik.');}};r.readAsText(f);document.getElementById('sdrop').classList.remove('on');}
 function clearAll(){if(confirm('Usunąć wszystkie dane?')){tasks=[];notes=[];save();saveN();tabs=[];atab=null;renderTabs();renderSB();renderNS();showView('home');document.getElementById('sdrop').classList.remove('on');}}
 
-load();
+// LOGOWANIE GOOGLE — dane wczytują się dopiero po zalogowaniu właściwym kontem
+const PL_ALLOWED='dutys100@gmail.com';
+function plLogin(){auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>{document.getElementById('pl-login-msg').textContent='Błąd logowania: '+e.message;});}
+let plStarted=false;
+auth.onAuthStateChanged(u=>{
+  const ov=document.getElementById('pl-login');
+  if(u&&u.email===PL_ALLOWED){ov.style.display='none';if(!plStarted){plStarted=true;load();}}
+  else{
+    if(u){auth.signOut();document.getElementById('pl-login-msg').textContent='To konto nie ma dostępu do Planera.';}
+    ov.style.display='flex';
+  }
+});
 </script>
 </body>
 </html>
